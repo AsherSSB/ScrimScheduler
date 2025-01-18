@@ -23,16 +23,17 @@ class Database(commands.Cog):
                 team_id SERIAL PRIMARY KEY,
                 team_name VARCHAR(100) NOT NULL,
                 players BIGINT[],
+                managers BIGINT[],
                 scrim_blocks VARCHAR[]
             );
 
             CREATE TABLE IF NOT EXISTS scrimplayers (
-                user_id BIGINT PRIMARY KEY,
                 team_id INTEGER REFERENCES scrimteams(team_id),
-                team_name VARCHAR(100) NOT NULL,
+                user_id BIGINT
                 availability SMALLINT[]
-        );
-    """)
+                PRIMARY KEY (team_id, user_id)
+            );
+        """)
         self.conn.commit()
 
 
