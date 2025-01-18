@@ -39,3 +39,36 @@ class ResponseSelect(ui.Select):
         self.view.choice = [int(value) for value in self.values]
         self.view.event.set()
 
+
+class SingleTextSubmission(discord.ui.Modal):
+    def __init__(self, title, label):
+        super().__init__(title=title)
+        self.input = discord.ui.TextInput(label=label, required=True)
+        self.add_item(self.textinput)
+        self.event = asyncio.Event()
+
+    async def on_submit(self, interaction:discord.Interaction):
+        await interaction.response.defer()
+        self.event.set()
+
+    async def wait(self):
+        await self.event.wait()
+
+
+class DoubleTextSubmission(discord.ui.Modal):
+    def __init__(self, title, label1, label2):
+        super().__init__(title=title)
+        self.first_input = discord.ui.TextInput(label=label1, required=True)
+        self.second_input = discord.ui.TextInput(label=label2, required=True)
+        self.add_item(self.first_input)
+        self.add_item(self.second_input)
+        self.event = asyncio.Event()
+
+    async def on_submit(self, interaction:discord.Interaction):
+        await interaction.response.defer()
+        self.event.set()
+
+    async def wait(self):
+        await self.event.wait()
+
+
