@@ -1,0 +1,14 @@
+tables 
+
+scrimteams
+server id big int
+team serial primary key
+team name string
+players array[bigint]
+scrim blocks: array[string]
+
+scrimplayers
+user id bigint primary key
+team serial primary key
+team name string
+availability array[smallint] representing indexes from scrim blocks
