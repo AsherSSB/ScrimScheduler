@@ -12,6 +12,13 @@ class Scheduler(commands.Cog):
         view = ScheduleView()
         await interaction.response.send_message("Hello World!", view=view)
         await view.wait()
+        if view.choice == -1:
+            await view.interaction.response.defer()
+            await interaction.delete_original_response()
+        # TODO: add functionality to other choices
+        else:
+            await view.interaction.defer()
+            pass
 
 
 class ScheduleView(discord.ui.View):
@@ -21,7 +28,7 @@ class ScheduleView(discord.ui.View):
         self.interaction: discord.Interaction
         self.event = asyncio.Event()
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.red)
+    @discord.ui.button(label="exit", style=discord.ButtonStyle.red)
     async def back_button(self, interaction: discord.Interaction, button):
         self.choice = -1
         self.event.set()
