@@ -6,8 +6,8 @@ import asyncio
 class ResponseView(ui.View):
     def __init__(self):
         super().__init__()
-        self.choice: int
         self.interaction: discord.Interaction
+        self.choice
         self.event = asyncio.Event()
 
     async def wait(self):
