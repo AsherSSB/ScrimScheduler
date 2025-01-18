@@ -49,6 +49,7 @@ class Scheduler(commands.Cog):
         elif view.choice == 0:
             modal = DoubleTextSubmission("Set Scrim Time", "Date", "Time")
             await view.interaction.response.send_modal(modal)
+            # TODO: add time to database
 
 
 class ScheduleView(ResponseView):

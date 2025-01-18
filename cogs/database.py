@@ -1,8 +1,6 @@
 import discord
 from discord.ext import commands
 import psycopg2
-import jsonpickle
-import json
 import os
 from dotenv import load_dotenv
 
@@ -18,6 +16,7 @@ class Database(commands.Cog):
                                      password=f"{password}",
                                      port="5432")
         self.cur = self.conn.cursor()
+        # TODO: initialize tables (team serial/userid primary keys)
 
 
 async def setup(bot):
