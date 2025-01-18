@@ -43,12 +43,13 @@ class ResponseSelect(ui.Select):
 class SingleTextSubmission(discord.ui.Modal):
     def __init__(self, title, label):
         super().__init__(title=title)
+        self.interaction: discord.Interaction
         self.input = discord.ui.TextInput(label=label, required=True)
         self.add_item(self.textinput)
         self.event = asyncio.Event()
 
     async def on_submit(self, interaction:discord.Interaction):
-        await interaction.response.defer()
+        self.interaction = interaction
         self.event.set()
 
     async def wait(self):
@@ -58,6 +59,7 @@ class SingleTextSubmission(discord.ui.Modal):
 class DoubleTextSubmission(discord.ui.Modal):
     def __init__(self, title, label1, label2):
         super().__init__(title=title)
+        self.interaction: discord.Interaction
         self.first_input = discord.ui.TextInput(label=label1, required=True)
         self.second_input = discord.ui.TextInput(label=label2, required=True)
         self.add_item(self.first_input)
@@ -65,10 +67,16 @@ class DoubleTextSubmission(discord.ui.Modal):
         self.event = asyncio.Event()
 
     async def on_submit(self, interaction:discord.Interaction):
-        await interaction.response.defer()
+        self.interaction = interaction
         self.event.set()
 
     async def wait(self):
         await self.event.wait()
+
+
+class ConfirmView(ResponseView):
+    def __init__(self):
+        self.add_item(ResponseButton("Confirm", 0, style=discord.ButtonStyle.green, emoji="✅", row=0))
+        self.add_item(ResponseButton("Cancel", -1, style=discord.ButtonStyle.red, emoji="❌", row=0))
 
 

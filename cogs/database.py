@@ -16,7 +16,6 @@ class Database(commands.Cog):
                                      password=f"{password}",
                                      port="5432")
         self.cur = self.conn.cursor()
-        # TODO: initialize tables (team serial/userid primary keys)
         self.cur.execute("""
             CREATE TABLE IF NOT EXISTS scrimteams (
                 server_id BIGINT NOT NULL,

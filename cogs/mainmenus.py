@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from custom.ui import ResponseView, ResponseButton, SingleTextSubmission, DoubleTextSubmission
+from custom.ui import ResponseView, ResponseButton, SingleTextSubmission, DoubleTextSubmission, ConfirmView
 
 
 class Scheduler(commands.Cog):
@@ -38,7 +38,8 @@ class Scheduler(commands.Cog):
         if view.choice == -1:
             return view.interaction
         elif view.choice == 0:
-            pass
+            interaction = await self.send_set_times_view(view.interaction)
+            await self.send_manager_menu(interaction)
 
     async def send_set_times_view(self, interaction: discord.Interaction):
         view = SetPotentialTimesView()
@@ -47,9 +48,19 @@ class Scheduler(commands.Cog):
         if view.choice == -1:
             return view.interaction
         elif view.choice == 0:
-            modal = DoubleTextSubmission("Set Scrim Time", "Date", "Time")
+            modal = DoubleTextSubmission("Set Scrim Time", "Date/Day of The Week", "Time")
             await view.interaction.response.send_modal(modal)
-            # TODO: add time to database
+            await modal.wait()
+            interaction = modal.interaction
+            time = f"{modal.first_input}, {modal.second_input}"
+            view = ConfirmView()
+            await interaction.response.send_message(f"Add \"{time}\"?")
+            await view.wait
+            if view.choice == -1:
+                await self.send_set_times_view(view.interaction)
+            else:
+                # TODO: add time to database
+                await self.send_set_times_view(view.interaction)
 
 
 class ScheduleView(ResponseView):
