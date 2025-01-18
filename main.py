@@ -3,7 +3,7 @@ import asyncio
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
-from custom import Client
+from custom.client import Client
 import logging
 
 logging.basicConfig(
