@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 import asyncio
+from custom.ui import ResponseView, ResponseButton
 
 
 class Scheduler(commands.Cog):
@@ -21,21 +22,10 @@ class Scheduler(commands.Cog):
             pass
 
 
-class ScheduleView(discord.ui.View):
+class ScheduleView(ResponseView):
     def __init__(self):
         super().__init__()
-        self.choice: int
-        self.interaction: discord.Interaction
-        self.event = asyncio.Event()
-
-    @discord.ui.button(label="exit", style=discord.ButtonStyle.red)
-    async def back_button(self, interaction: discord.Interaction, button):
-        self.choice = -1
-        self.event.set()
-        self.interaction = interaction
-
-    async def wait(self):
-        await self.event()
+        self.add_item(ResponseButton("Exit", -1, style=discord.ButtonStyle.red))
 
 
 async def setup(bot):
