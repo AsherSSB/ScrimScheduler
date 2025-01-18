@@ -21,7 +21,7 @@ class ScheduleView(discord.ui.View):
         self.interaction: discord.Interaction
         self.event = asyncio.Event()
 
-    @discord.ui.button(label="Back")
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.red)
     async def back_button(self, interaction: discord.Interaction, button):
         self.choice = -1
         self.event.set()
