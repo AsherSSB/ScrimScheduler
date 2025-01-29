@@ -28,12 +28,21 @@ class Database(commands.Cog):
 
             CREATE TABLE IF NOT EXISTS scrimplayers (
                 team_id INTEGER REFERENCES scrimteams(team_id),
-                user_id BIGINT
-                availability SMALLINT[]
+                user_id BIGINT,
+                availability SMALLINT[],
                 PRIMARY KEY (team_id, user_id)
             );
         """)
         self.conn.commit()
+
+    # TODO: query to find all teams where user is a player
+
+    def get_teams(self, server_id):
+        self.cur.execute("""
+            SELECT (team_id, team_name) FROM scrimteams
+            WHERE server_id = %s;""", (server_id,))
+        res = self.cur.fetchall()
+        return res
 
 
 async def setup(bot):

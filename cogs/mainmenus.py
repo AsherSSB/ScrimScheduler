@@ -7,9 +7,8 @@ class Scheduler(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @discord.app_commands.command(name="schedule")
-    async def test_send_main_menu(self, interaction: discord.Interaction):
-        await self.send_main_menu(interaction)
+    async def send_greeting_menu(name="schedule"):
+        pass
 
     async def send_main_menu(self, interaction: discord.Interaction):
         view = ScheduleView()
@@ -63,6 +62,14 @@ class Scheduler(commands.Cog):
                 await self.send_set_times_view(view.interaction)
 
 
+class GreetingView(ResponseView):
+    def __init__(self, team_names: list[str]):
+        super().__init__()
+        for i, name in enumerate(team_names):
+            self.add_item(ResponseButton(name, i))
+        self.add_item(ResponseButton("exit", -1, style=discord.ButtonStyle.red, row=4))
+
+
 class ScheduleView(ResponseView):
     def __init__(self):
         super().__init__()
@@ -85,6 +92,8 @@ class AdminMenuView(ResponseView):
     def __init__(self):
         super().__init__()
         self.add_item(ResponseButton("Set Managers", 0, style=discord.ButtonStyle.green, row=3))
+        self.add_item(ResponseButton("Create Team", 1, style=discord.ButtonStyle.blurple, row=3))
+        self.add_item(ResponseButton("Disband Team", 2, style=discord.ButtonStyle.red, row=3))
         self.add_item(ResponseButton("Back", -1, style=discord.ButtonStyle.red, row=4))
 
 

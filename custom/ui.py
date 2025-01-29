@@ -25,7 +25,7 @@ class ResponseButton(ui.Button):
         self.view.event.set()
 
 
-class ResponseOption(ui.SelectOption):
+class ResponseOption(discord.SelectOption):
     def __init__(self, label: str, value: int, emoji=None):
         super().__init__(label=label, value=value, emoji=emoji)
 
