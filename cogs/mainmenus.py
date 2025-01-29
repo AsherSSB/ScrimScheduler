@@ -12,22 +12,32 @@ class Scheduler(commands.Cog):
     @discord.app_commands.command(name="schedule")
     async def send_greeting_menu(self, interaction: discord.Interaction):
         # if user is admin, query all teams related to server id
+        teams: list[tuple]
         if interaction.user.guild_permissions.administrator:
-            pass
+            teams = self.db.get_all_teams(interaction.guild_id)
         # else query all teams where server and user are related
-
+        else:
+            # placeholder
+            teams = []
         # initialize view with team options
-
+        view = GreetingView([team[1] for team in teams])
         # if user is admin, add add team button to view
-
+        if interaction.user.guild_permissions.administrator:
+            view.add_item(ResponseButton("Add Team", choice=99, style=discord.ButtonStyle.green, row=3))
         # respond to interaction with view
-
+        await interaction.response.send_message("Welcome!", view=view)
         # wait for selection
-
-        # if option is team, send team menu
-
-        # else if option is add team, send add team dialogue
-        pass
+        await view.wait()
+        if view.choice == -1:
+            await interaction.delete_original_response()
+        # if option is add team, send add team dialogue
+        elif view.choice == 99:
+            # send new team name modal
+            # update previous interaction for new response in case user clicks out of modal
+            pass
+        else:
+            # send selected team menu
+            pass
 
     async def send_main_menu(self, interaction: discord.Interaction):
         view = ScheduleView()
