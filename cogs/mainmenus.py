@@ -1,11 +1,13 @@
 import discord
 from discord.ext import commands
 from custom.ui import ResponseView, ResponseButton, SingleTextSubmission, DoubleTextSubmission, ConfirmView
+from cogs.database import Database
 
 
 class Scheduler(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.db = Database(bot)
 
     @discord.app_commands.command(name="schedule")
     async def send_greeting_menu(self, interaction: discord.Interaction):
@@ -77,6 +79,13 @@ class Scheduler(commands.Cog):
             else:
                 # TODO: add time to database
                 await self.send_set_times_view(view.interaction)
+
+    async def cleanup(self):
+        self.db.conn.close
+        self.db.cur.close
+
+    async def cog_unload(self):
+        await self.cleanup()
 
 
 class GreetingView(ResponseView):
