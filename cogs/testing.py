@@ -10,7 +10,7 @@ class Testing(commands.Cog):
 
     @discord.app_commands.command(name="testdb")
     async def get_teams_test(self, interaction: discord.Interaction):
-        teams = self.db.get_teams(interaction.guild_id)
+        teams = self.db.get_all_teams(interaction.guild_id)
         await interaction.response.send_message(teams)
 
 

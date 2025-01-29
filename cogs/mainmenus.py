@@ -7,7 +7,24 @@ class Scheduler(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    async def send_greeting_menu(name="schedule"):
+    @discord.app_commands.command(name="schedule")
+    async def send_greeting_menu(self, interaction: discord.Interaction):
+        # if user is admin, query all teams related to server id
+        if interaction.user.guild_permissions.administrator:
+            pass
+        # else query all teams where server and user are related
+
+        # initialize view with team options
+
+        # if user is admin, add add team button to view
+
+        # respond to interaction with view
+
+        # wait for selection
+
+        # if option is team, send team menu
+
+        # else if option is add team, send add team dialogue
         pass
 
     async def send_main_menu(self, interaction: discord.Interaction):

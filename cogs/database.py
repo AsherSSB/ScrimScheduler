@@ -35,9 +35,9 @@ class Database(commands.Cog):
         """)
         self.conn.commit()
 
-    # TODO: query to find all teams where user is a player
+    # TODO: query to find all teams where user is a manager or player
 
-    def get_teams(self, server_id):
+    def get_all_teams(self, server_id):
         self.cur.execute("""
             SELECT (team_id, team_name) FROM scrimteams
             WHERE server_id = %s;""", (server_id,))
