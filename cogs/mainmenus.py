@@ -29,9 +29,9 @@ class Scheduler(commands.Cog):
         # wait for selection
         await view.wait()
         if view.choice == -1:
+            await view.interaction.defer()
             await interaction.delete_original_response()
-        # if option is add team, send add team dialogue
-        elif view.choice == 99:
+        elif view.choice == 99:  # add team
             # send new team name modal
             # update previous interaction for new response in case user clicks out of modal
             pass
@@ -143,5 +143,3 @@ class SetPotentialTimesView(ResponseView):
 
 async def setup(bot):
     await bot.add_cog(Scheduler(bot))
-
-

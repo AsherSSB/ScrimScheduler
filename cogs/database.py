@@ -1,20 +1,14 @@
-import discord
 from discord.ext import commands
-import psycopg2
-import os
+import sqlite3
 from dotenv import load_dotenv
+import discord
 
 
 class Database(commands.Cog):
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self, bot: commands.Bot):
+        self.bot: commands.Bot = bot
         load_dotenv()
-        password = os.getenv('DB_PASS')
-        self.conn = psycopg2.connect(database="SavvyRPG",
-                                     host="localhost",
-                                     user="postgres",
-                                     password=f"{password}",
-                                     port="5432")
+        self.conn = sqlite3.connect("ScrimSchedulerDB")
         self.cur = self.conn.cursor()
         self.cur.execute("""
             CREATE TABLE IF NOT EXISTS scrimteams (
@@ -24,28 +18,25 @@ class Database(commands.Cog):
                 players BIGINT[],
                 managers BIGINT[],
                 scrim_blocks VARCHAR[]
-            );
-
+        );""")
+        self.cur.execute("""
             CREATE TABLE IF NOT EXISTS scrimplayers (
                 team_id INTEGER REFERENCES scrimteams(team_id),
                 user_id BIGINT,
                 availability SMALLINT[],
                 PRIMARY KEY (team_id, user_id)
-            );
-        """)
+        );""")
         self.conn.commit()
 
     # TODO: query to find all teams where user is a manager or player
 
     def get_all_teams(self, server_id):
         self.cur.execute("""
-            SELECT (team_id, team_name) FROM scrimteams
-            WHERE server_id = %s;""", (server_id,))
+            SELECT team_id, team_name FROM scrimteams
+            WHERE server_id = ?;""", (server_id,))
         res = self.cur.fetchall()
         return res
 
 
 async def setup(bot):
     await bot.add_cog(Database(bot))
-
-
