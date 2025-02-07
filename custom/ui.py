@@ -8,11 +8,13 @@ class DiscordResponsiveUI:
         pass
 
     async def send_responsive_modal(
-        self, interaction: discord.Interaction, title, *fields
+        self, old_interaction, fresh_interaction: discord.Interaction, title, *fields
     ):
-        modal = ResponseModal(interaction, title, fields)
-        await modal.view.wait()
-        return modal.responses
+        handler = ResponseModalHandler(
+            title, old_interaction, fresh_interaction, fields
+        )
+        interaction, response_dict = await handler.send_response_modal()
+        return interaction, response_dict
 
 
 class ResponseView(ui.View):
@@ -32,6 +34,7 @@ class ResponseButton(ui.Button):
     ):
         super().__init__(label=label, style=style, emoji=emoji, row=row)
         self.choice = choice
+        self.view: ResponseView
 
     async def callback(self, interaction):
         self.view.interaction = interaction
@@ -39,14 +42,21 @@ class ResponseButton(ui.Button):
         self.view.event.set()
 
 
+class ResponseSelectView(ResponseView):
+    def __init__(self):
+        super().__init__()
+        self.choice = []
+
+
 class ResponseOption(discord.SelectOption):
     def __init__(self, label: str, value: int, emoji=None):
-        super().__init__(label=label, value=value, emoji=emoji)
+        super().__init__(label=label, value=str(value), emoji=emoji)
 
 
 class ResponseSelect(ui.Select):
-    def __init__(self, options: list[ResponseOption], row=None):
+    def __init__(self, options: list[discord.SelectOption], row=None):
         super().__init__(options=options, max_values=len(options), row=row)
+        self.view: ResponseSelectView
 
     async def callback(self, interaction):
         self.view.interaction = interaction
@@ -58,8 +68,8 @@ class SingleTextSubmission(ui.Modal):
     def __init__(self, title, label):
         super().__init__(title=title)
         self.interaction: discord.Interaction
-        self.input = ui.TextInput(label=label, required=True)
-        self.add_item(self.textinput)
+        self.text_input = ui.TextInput(label=label, required=True)
+        self.add_item(self.text_input)
         self.event = asyncio.Event()
 
     async def on_submit(self, interaction: discord.Interaction):
