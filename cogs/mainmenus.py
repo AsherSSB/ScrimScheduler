@@ -23,7 +23,7 @@ class Scheduler(commands.Cog):
 
         teams: list[tuple]
         if isinstance(user, discord.Member) and user.guild_permissions.administrator:
-            teams = self.db.get_all_teams(interaction.guild_id)
+            teams = self.db.get_all_teams_from_server_id(interaction.guild_id)
         # else query all teams where server and user are related
         else:
             # placeholder
@@ -97,14 +97,14 @@ class Scheduler(commands.Cog):
             interaction = modal.interaction
             time = f"{modal.first_input}, {modal.second_input}"
             view = ConfirmView()
-            await interaction.response.send_message(f'Add "{time}"?')
+            await interaction.response.send_message(f'Add "{time}"?', view=view)
             await view.wait()
+            # typechecker complains about recursive async calls, Oh Well!
             if view.choice == -1:
                 return await self.send_set_times_view(view.interaction)
             else:
                 # TODO: add time to database
                 return await self.send_set_times_view(view.interaction)
-        return interaction
 
     async def cleanup(self):
         self.db.conn.close

@@ -10,7 +10,8 @@ class Database(commands.Cog):
         load_dotenv()
         self.conn = sqlite3.connect("ScrimSchedulerDB")
         self.cur = self.conn.cursor()
-        self.cur.execute("""
+        self.cur.execute(
+            """
             CREATE TABLE IF NOT EXISTS scrimteams (
                 server_id BIGINT NOT NULL,
                 team_id SERIAL PRIMARY KEY,
@@ -18,22 +19,48 @@ class Database(commands.Cog):
                 players BIGINT[],
                 managers BIGINT[],
                 scrim_blocks VARCHAR[]
-        );""")
-        self.cur.execute("""
+        );"""
+        )
+        self.cur.execute(
+            """
             CREATE TABLE IF NOT EXISTS scrimplayers (
                 team_id INTEGER REFERENCES scrimteams(team_id),
-                user_id BIGINT,
+                user_id BIGINT NOT NULL,
                 availability SMALLINT[],
                 PRIMARY KEY (team_id, user_id)
-        );""")
+        );"""
+        )
+        self.cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS scrimmanagers (
+                team_id INTEGER REFERENCES scrimteams(team_id),
+                user_id BIGINT NOT NULL,
+                PRIMARY KEY (team_id, userid)
+            )
+        """
+        )
         self.conn.commit()
 
-    # TODO: query to find all teams where user is a manager or player
+    def get_teams_from_user_id(self, user_id):
+        self.cur.execute(
+            """
+                SELECT DISTINCT scrimteams.*
+                FROM scrimteams
+                LEFT JOIN scrimplayers ON scrimteams.team_id = scrimplayers.team_id
+                LEFT JOIN scrimmanagers ON scrimteams.team_id = scrimmanagers.team_id
+                WHERE scrimplayers.user_id = ? OR scrimmanagers.user_id = ?;
+            """,
+            (user_id, user_id),
+        )
+        return self.cur.fetchall()
 
-    def get_all_teams(self, server_id):
-        self.cur.execute("""
+    def get_all_teams_from_server_id(self, server_id):
+        self.cur.execute(
+            """
             SELECT team_id, team_name FROM scrimteams
-            WHERE server_id = ?;""", (server_id,))
+            WHERE server_id = ?;""",
+            (server_id,),
+        )
         res = self.cur.fetchall()
         return res
 
