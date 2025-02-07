@@ -6,6 +6,7 @@ from custom.ui import (
     ResponseOption,
     ResponseSelect,
     ResponseSelectView,
+    ResponseModalHandler,
     SingleTextSubmission,
     DoubleTextSubmission,
     ConfirmView,
@@ -43,6 +44,9 @@ class Scheduler(commands.Cog):
         self.db = Database(bot)
 
     @discord.app_commands.command(name="schedule")
+    async def initialize_app(self, interaction: discord.Interaction):
+        await self.send_greeting_menu(interaction)
+
     async def send_greeting_menu(self, interaction: discord.Interaction):
         user: discord.Member | discord.User = interaction.user
         teams: list[tuple]
@@ -63,15 +67,13 @@ class Scheduler(commands.Cog):
             )
         await interaction.response.send_message("Welcome!", view=view)
         await view.wait()
-        if view.choice == -1:
+        if view.choice == -1:  # exit
             await view.interaction.response.defer()
             await interaction.delete_original_response()
         elif view.choice == 99:  # add team
             # send new team name modal
-            # update previous interaction for new response in case user clicks out of modal
-            pass
-        else:
-            # TODO: query for privileges
+            await self.send_team_creation_menu(interaction, view.interaction)
+        else:  # selected a team
             if self.db.is_manager(teams[view.choice][1], interaction.user.id):
                 privileges = PRIVILEGES.MANAGER
             else:
@@ -79,6 +81,16 @@ class Scheduler(commands.Cog):
             await self.send_main_menu(
                 view.interaction, teams[view.choice][1], privileges
             )
+
+    async def send_team_creation_menu(self, old_interaction, fresh_interaction):
+        handler = ResponseModalHandler(
+            "Create New Team", old_interaction, fresh_interaction, "Team Name"
+        )
+        interaction, responses = await handler.send_response_modal()
+        self.db.create_team(
+            interaction.guild_id, responses[0]
+        )  # responses 0 is team name
+        await self.send_greeting_menu(interaction)
 
     async def send_main_menu(
         self, interaction: discord.Interaction, team_id, privileges
