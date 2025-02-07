@@ -33,7 +33,7 @@ class Database(commands.Cog):
             CREATE TABLE IF NOT EXISTS scrimmanagers (
                 team_id INTEGER REFERENCES scrimteams(team_id),
                 user_id BIGINT NOT NULL,
-                PRIMARY KEY (team_id, userid)
+                PRIMARY KEY (team_id, user_id)
         );"""
         )
         self.conn.commit()
