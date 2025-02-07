@@ -15,10 +15,8 @@ class Database(commands.Cog):
             CREATE TABLE IF NOT EXISTS scrimteams (
                 server_id BIGINT NOT NULL,
                 team_id SERIAL PRIMARY KEY,
-                team_name VARCHAR(100) NOT NULL,
-                players BIGINT[],
-                managers BIGINT[],
-                scrim_blocks VARCHAR[]
+                team_name TEXT NOT NULL,
+                scrim_blocks TEXT
         );"""
         )
         self.cur.execute(
@@ -26,7 +24,7 @@ class Database(commands.Cog):
             CREATE TABLE IF NOT EXISTS scrimplayers (
                 team_id INTEGER REFERENCES scrimteams(team_id),
                 user_id BIGINT NOT NULL,
-                availability SMALLINT[],
+                availability ,
                 PRIMARY KEY (team_id, user_id)
         );"""
         )
@@ -36,16 +34,25 @@ class Database(commands.Cog):
                 team_id INTEGER REFERENCES scrimteams(team_id),
                 user_id BIGINT NOT NULL,
                 PRIMARY KEY (team_id, userid)
-            )
-        """
+        );"""
+        )
+        self.conn.commit()
+
+    def set_team_scrim_blocks(self, team_id, blocks):
+        self.cur.execute(
+            """
+                UPDATE scrimteams
+                SET scrim_blocks = ?
+                WHERE team_id = ?
+                """,
+            (blocks, team_id),
         )
         self.conn.commit()
 
     def get_teams_from_user_id(self, user_id):
         self.cur.execute(
             """
-                SELECT DISTINCT scrimteams.*
-                FROM scrimteams
+                SELECT team_id, team_name FROM scrimteams                
                 LEFT JOIN scrimplayers ON scrimteams.team_id = scrimplayers.team_id
                 LEFT JOIN scrimmanagers ON scrimteams.team_id = scrimmanagers.team_id
                 WHERE scrimplayers.user_id = ? OR scrimmanagers.user_id = ?;
@@ -63,6 +70,13 @@ class Database(commands.Cog):
         )
         res = self.cur.fetchall()
         return res
+
+    def is_manager(self, team_id: int, user_id: int) -> bool:
+        self.cur.execute(
+            "SELECT 1 FROM scrimmanagers WHERE team_id = ? AND user_id = ?;",
+            (team_id, user_id),
+        )
+        return self.cur.fetchone() is not None
 
 
 async def setup(bot):

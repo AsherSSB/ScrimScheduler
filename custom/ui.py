@@ -45,7 +45,8 @@ class ResponseButton(ui.Button):
 class ResponseSelectView(ResponseView):
     def __init__(self):
         super().__init__()
-        self.choice = []
+        self.choice = -99
+        self.selections = []
 
 
 class ResponseOption(discord.SelectOption):
@@ -60,7 +61,7 @@ class ResponseSelect(ui.Select):
 
     async def callback(self, interaction):
         self.view.interaction = interaction
-        self.view.choice = [int(value) for value in self.values]
+        self.view.selections = [int(value) for value in self.values]
         self.view.event.set()
 
 
