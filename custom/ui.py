@@ -3,11 +3,13 @@ import discord.ui as ui
 import asyncio
 
 
-class DiscordResponsiveUI():
+class DiscordResponsiveUI:
     def __init__(self):
         pass
 
-    async def send_responsive_modal(self, interaction:discord.Interaction, title, *fields):
+    async def send_responsive_modal(
+        self, interaction: discord.Interaction, title, *fields
+    ):
         modal = ResponseModal(interaction, title, fields)
         await modal.view.wait()
         return modal.responses
@@ -25,7 +27,9 @@ class ResponseView(ui.View):
 
 
 class ResponseButton(ui.Button):
-    def __init__(self, label, choice, style=discord.ButtonStyle.blurple, emoji=None, row=None):
+    def __init__(
+        self, label, choice, style=discord.ButtonStyle.blurple, emoji=None, row=None
+    ):
         super().__init__(label=label, style=style, emoji=emoji, row=row)
         self.choice = choice
 
@@ -58,7 +62,7 @@ class SingleTextSubmission(ui.Modal):
         self.add_item(self.textinput)
         self.event = asyncio.Event()
 
-    async def on_submit(self, interaction:discord.Interaction): 
+    async def on_submit(self, interaction: discord.Interaction):
         self.interaction = interaction
         self.event.set()
 
@@ -76,7 +80,7 @@ class DoubleTextSubmission(ui.Modal):
         self.add_item(self.second_input)
         self.event = asyncio.Event()
 
-    async def on_submit(self, interaction:discord.Interaction):
+    async def on_submit(self, interaction: discord.Interaction):
         self.interaction = interaction
         self.event.set()
 
@@ -86,11 +90,19 @@ class DoubleTextSubmission(ui.Modal):
 
 class ConfirmView(ResponseView):
     def __init__(self):
-        self.add_item(ResponseButton("Confirm", 0, style=discord.ButtonStyle.green, emoji="✅", row=0))
-        self.add_item(ResponseButton("Cancel", -1, style=discord.ButtonStyle.red, emoji="❌", row=0))
+        self.add_item(
+            ResponseButton(
+                "Confirm", 0, style=discord.ButtonStyle.green, emoji="✅", row=0
+            )
+        )
+        self.add_item(
+            ResponseButton(
+                "Cancel", -1, style=discord.ButtonStyle.red, emoji="❌", row=0
+            )
+        )
 
 
-class ResponseModalHandler():
+class ResponseModalHandler:
     def __init__(self, title, old_interaction, fresh_interaction, *fields):
         self.view_interaction = old_interaction
         self.modal_interaction = fresh_interaction
@@ -101,60 +113,65 @@ class ResponseModalHandler():
         self.view: ModalView
         self.modal: ResponseModal
 
-    async def loop_view(self):
+    async def send_response_modal(self) -> tuple:
         # create modal
-        self.modal = ResponseModal(self.modal_title, self.modal_interaction, self, self.fields)
+        self.modal = ResponseModal(self)
         # create and send view
-        self.view = ModalView()
+        self.view = ModalView(self)
+        self.view_interaction.edit_original_response("Modal Menu", view=self.view)
         # send modal
+        self.modal_interaction.response.send_modal(self.modal)
         # wait for event
-        # if setter is view
-        # if view choice is 0
-        # reset event
-        # recurse
-        # else
-        # return
-        pass
-
-    async def send_response_modal(self):
-        # send looped view
-        # if responses
-        # return interaction, responses
-        # else:
-        # return interaction, None
-        pass
-
-    async def wait(self):
         await self.event.wait()
-
-
-class ResendModalButton(ui.Button):
-    def __init__(self):
-        super().__init__(label="Resend Modal", style=discord.ButtonStyle.green)
-
-    async def callback(self, interaction: discord.Interaction):
-        modal = ResponseModal(self.view.handler.modal_title, self.view.handler, self.view.handler.fields)
-        self.view.handler.modal = modal
-        await self.view.interaction.edit_original_response("Answer Modal")
-        await interaction.response.send_modal(self.view.modal)
+        # if setter is view
+        if self.setter == "view":
+            self.modal_interaction = self.view.interaction
+            # if view choice is 0
+            if self.view.choice == 0:
+                self.event = asyncio.Event()
+                results = await self.send_response_modal()
+                interaction, responses = results
+                return interaction, responses
+            else:
+                return self.modal_interaction, {}
+        else:
+            return self.modal.interaction, self.modal.responses
 
 
 class ModalView(ui.View):
-    def __init__(self, interaction, handler):
+    def __init__(self, handler):
         super().__init__()
-        self.interaction: discord.interaction = interaction
         self.handler = handler
+        self.interaction: discord.Interaction
+        self.choice: int
+
+    @ui.button(label="Resend Modal", style=discord.ButtonStyle.green)
+    async def resend_modal_button(self, interaction: discord.Interaction, button):
+        self.choice = 0
+        self.interaction = interaction
+        self.handler.setter = "view"
+        self.handler.event.set()
+
+    @ui.button(label="Back", style=discord.ButtonStyle.red)
+    async def back_button(self, interaction: discord.Interaction, button):
+        self.choice = -1
+        self.interaction = interaction
+        self.handler.setter = "view"
+        self.handler.event.set()
 
 
 class ResponseModal(ui.Modal):
-    def __init__(self, title, handler, *fields):
-        super().__init__(title=title)
+    def __init__(self, handler: ResponseModalHandler):
+        super().__init__(title=handler.modal_title)
         self.handler = handler
         self.text_inputs = []
         self.responses = {}
-        for field in fields:
+        for field in handler.fields:
             self.text_inputs.append(ui.TextInput(label=field, required=True))
+        self.interaction: discord.Interaction
 
     async def on_submit(self, interaction: discord.Interaction):
-        self.hander.interaction = interaction
+        self.responses = dict(zip(self.handler.fields, self.text_inputs))
+        self.interaction = interaction
+        self.handler.setter = "modal"
         self.handler.event.set()
