@@ -38,6 +38,14 @@ class Database(commands.Cog):
         )
         self.conn.commit()
 
+    def create_team(self, team_id, team_name):
+        self.cur.execute(
+            """
+                INSERT INTO scrimteams (team_id, team_name) VALUES (?, ?)
+            """,
+            (team_id, team_name),
+        )
+
     def set_team_scrim_blocks(self, team_id, blocks):
         self.cur.execute(
             """
