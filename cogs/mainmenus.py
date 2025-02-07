@@ -1,6 +1,13 @@
+from typing import Union
 import discord
 from discord.ext import commands
-from custom.ui import ResponseView, ResponseButton, SingleTextSubmission, DoubleTextSubmission, ConfirmView
+from custom.ui import (
+    ResponseView,
+    ResponseButton,
+    SingleTextSubmission,
+    DoubleTextSubmission,
+    ConfirmView,
+)
 from cogs.database import Database
 
 
@@ -12,8 +19,10 @@ class Scheduler(commands.Cog):
     @discord.app_commands.command(name="schedule")
     async def send_greeting_menu(self, interaction: discord.Interaction):
         # if user is admin, query all teams related to server id
+        user: discord.Member | discord.User = interaction.user
+
         teams: list[tuple]
-        if interaction.user.guild_permissions.administrator:
+        if isinstance(user, discord.Member) and user.guild_permissions.administrator:
             teams = self.db.get_all_teams(interaction.guild_id)
         # else query all teams where server and user are related
         else:
@@ -22,14 +31,18 @@ class Scheduler(commands.Cog):
         # initialize view with team options
         view = GreetingView([team[1] for team in teams])
         # if user is admin, add add team button to view
-        if interaction.user.guild_permissions.administrator:
-            view.add_item(ResponseButton("Add Team", choice=99, style=discord.ButtonStyle.green, row=3))
+        if isinstance(user, discord.Member) and user.guild_permissions.administrator:
+            view.add_item(
+                ResponseButton(
+                    "Add Team", choice=99, style=discord.ButtonStyle.green, row=3
+                )
+            )
         # respond to interaction with view
         await interaction.response.send_message("Welcome!", view=view)
         # wait for selection
         await view.wait()
         if view.choice == -1:
-            await view.interaction.defer()
+            await view.interaction.response.defer()
             await interaction.delete_original_response()
         elif view.choice == 99:  # add team
             # send new team name modal
@@ -61,7 +74,7 @@ class Scheduler(commands.Cog):
 
     async def send_manager_menu(self, interaction: discord.Interaction):
         view = ManagerMenuView()
-        interaction.response.send_message("Manager Menu", view=view)
+        await interaction.response.send_message("Manager Menu", view=view)
         await view.wait()
         if view.choice == -1:
             return view.interaction
@@ -74,21 +87,24 @@ class Scheduler(commands.Cog):
         await interaction.response.send_message("Set Scrim Times", view=view)
         await view.wait()
         if view.choice == -1:
-            return view.interaction
+            interaction = view.interaction
         elif view.choice == 0:
-            modal = DoubleTextSubmission("Set Scrim Time", "Date/Day of The Week", "Time")
+            modal = DoubleTextSubmission(
+                "Set Scrim Time", "Date/Day of The Week", "Time"
+            )
             await view.interaction.response.send_modal(modal)
             await modal.wait()
             interaction = modal.interaction
             time = f"{modal.first_input}, {modal.second_input}"
             view = ConfirmView()
-            await interaction.response.send_message(f"Add \"{time}\"?")
-            await view.wait
+            await interaction.response.send_message(f'Add "{time}"?')
+            await view.wait()
             if view.choice == -1:
-                await self.send_set_times_view(view.interaction)
+                return await self.send_set_times_view(view.interaction)
             else:
                 # TODO: add time to database
-                await self.send_set_times_view(view.interaction)
+                return await self.send_set_times_view(view.interaction)
+        return interaction
 
     async def cleanup(self):
         self.db.conn.close
@@ -109,35 +125,61 @@ class GreetingView(ResponseView):
 class ScheduleView(ResponseView):
     def __init__(self):
         super().__init__()
-        self.add_item(ResponseButton("My Schedule", 0, style=discord.ButtonStyle.green, row=0))
-        self.add_item(ResponseButton("Set My Availability", 1, style=discord.ButtonStyle.blurple, row=0))
-        self.add_item(ResponseButton("Manager Options", 2, style=discord.ButtonStyle.gray, row=1))
-        self.add_item(ResponseButton("Admin Options", 3, style=discord.ButtonStyle.red, row=1))
+        self.add_item(
+            ResponseButton("My Schedule", 0, style=discord.ButtonStyle.green, row=0)
+        )
+        self.add_item(
+            ResponseButton(
+                "Set My Availability", 1, style=discord.ButtonStyle.blurple, row=0
+            )
+        )
+        self.add_item(
+            ResponseButton("Manager Options", 2, style=discord.ButtonStyle.gray, row=1)
+        )
+        self.add_item(
+            ResponseButton("Admin Options", 3, style=discord.ButtonStyle.red, row=1)
+        )
         self.add_item(ResponseButton("Exit", -1, style=discord.ButtonStyle.red, row=4))
 
 
 class ManagerMenuView(ResponseView):
     def __init__(self):
         super().__init__()
-        self.add_item(ResponseButton("Set Open Scrim Times", 0, style=discord.ButtonStyle.blurple, row=1))
-        self.add_item(ResponseButton("Send Schedule", 1, style=discord.ButtonStyle.gray, row=1))
+        self.add_item(
+            ResponseButton(
+                "Set Open Scrim Times", 0, style=discord.ButtonStyle.blurple, row=1
+            )
+        )
+        self.add_item(
+            ResponseButton("Send Schedule", 1, style=discord.ButtonStyle.gray, row=1)
+        )
         self.add_item(ResponseButton("Back", -1, style=discord.ButtonStyle.red, row=4))
 
 
 class AdminMenuView(ResponseView):
     def __init__(self):
         super().__init__()
-        self.add_item(ResponseButton("Set Managers", 0, style=discord.ButtonStyle.green, row=3))
-        self.add_item(ResponseButton("Create Team", 1, style=discord.ButtonStyle.blurple, row=3))
-        self.add_item(ResponseButton("Disband Team", 2, style=discord.ButtonStyle.red, row=3))
+        self.add_item(
+            ResponseButton("Set Managers", 0, style=discord.ButtonStyle.green, row=3)
+        )
+        self.add_item(
+            ResponseButton("Create Team", 1, style=discord.ButtonStyle.blurple, row=3)
+        )
+        self.add_item(
+            ResponseButton("Disband Team", 2, style=discord.ButtonStyle.red, row=3)
+        )
         self.add_item(ResponseButton("Back", -1, style=discord.ButtonStyle.red, row=4))
 
 
 class SetPotentialTimesView(ResponseView):
     def __init__(self):
         super().__init__()
-        self.add_item(ResponseButton("Add Time", 0, style=discord.ButtonStyle.green, row=0))
-        self.add_item(ResponseButton("Remove Time", 1, style=discord.ButtonStyle.red, row=0))
+        self.add_item(
+            ResponseButton("Add Time", 0, style=discord.ButtonStyle.green, row=0)
+        )
+        self.add_item(
+            ResponseButton("Remove Time", 1, style=discord.ButtonStyle.red, row=0)
+        )
         self.add_item(ResponseButton("Back", -1, style=discord.ButtonStyle.red, row=4))
 
 
