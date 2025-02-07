@@ -41,7 +41,7 @@ class Database(commands.Cog):
     def create_team(self, server_id, team_name):
         self.cur.execute(
             """
-                INSERT INTO scrimteams (team_id, team_name) VALUES (?, ?)
+                INSERT INTO scrimteams (server_id, team_name) VALUES (?, ?)
             """,
             (server_id, team_name),
         )

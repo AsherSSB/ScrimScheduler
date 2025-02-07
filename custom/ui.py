@@ -47,6 +47,16 @@ class ResponseSelectView(ResponseView):
         super().__init__()
         self.choice = -99
         self.selections = []
+        self.add_item(ResponseButton("back", -1, discord.ButtonStyle.red, row=4))
+        self.confirm_button = ResponseButton(
+            "Confirm Changes", 0, discord.ButtonStyle.green, row=4
+        )
+        self.confirm_button.disabled = True
+        self.add_item(self.confirm_button)
+
+    def enable_confirm_if_selected(self):
+        if len(self.selections) > 0:
+            self.confirm_button.disabled = False
 
 
 class ResponseOption(discord.SelectOption):
@@ -60,8 +70,9 @@ class ResponseSelect(ui.Select):
         self.view: ResponseSelectView
 
     async def callback(self, interaction):
-        self.view.interaction = interaction
+        await interaction.response.defer()
         self.view.selections = [int(value) for value in self.values]
+        self.view.enable_confirm_if_selected()
         self.view.event.set()
 
 
@@ -129,9 +140,11 @@ class ResponseModalHandler:
         self.modal = ResponseModal(self)
         # create and send view
         self.view = ModalView(self)
-        self.view_interaction.edit_original_response("Modal Menu", view=self.view)
+        await self.view_interaction.edit_original_response(
+            content="Modal Menu", view=self.view
+        )
         # send modal
-        self.modal_interaction.response.send_modal(self.modal)
+        await self.modal_interaction.response.send_modal(self.modal)
         # wait for event
         await self.event.wait()
         # if setter is view
@@ -140,8 +153,7 @@ class ResponseModalHandler:
             # if view choice is 0
             if self.view.choice == 0:
                 self.event = asyncio.Event()
-                results = await self.send_response_modal()
-                interaction, responses = results
+                interaction, responses = await self.send_response_modal()
                 return interaction, responses
             else:
                 return self.modal_interaction, {}
@@ -175,14 +187,24 @@ class ResponseModal(ui.Modal):
     def __init__(self, handler: ResponseModalHandler):
         super().__init__(title=handler.modal_title)
         self.handler = handler
-        self.text_inputs = []
         self.responses = {}
+
+        if not (1 <= len(self.handler.fields) <= 5):
+            raise ValueError("ResponseModal only takes between 1 and 5 args")
+
         for field in handler.fields:
-            self.text_inputs.append(ui.TextInput(label=field, required=True))
+            text_input = ui.TextInput(
+                label=field,
+                style=discord.TextStyle.short,
+                required=True,
+            )
+            self.add_item(text_input)
+            self.responses[field] = text_input
+
         self.interaction: discord.Interaction
 
     async def on_submit(self, interaction: discord.Interaction):
-        self.responses = dict(zip(self.handler.fields, self.text_inputs))
+        self.responses = {label: field.value for label, field in self.responses.items()}
         self.interaction = interaction
         self.handler.setter = "modal"
         self.handler.event.set()

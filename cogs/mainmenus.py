@@ -84,12 +84,16 @@ class Scheduler(commands.Cog):
 
     async def send_team_creation_menu(self, old_interaction, fresh_interaction):
         handler = ResponseModalHandler(
-            "Create New Team", old_interaction, fresh_interaction, "Team Name"
+            "Create New Team",
+            old_interaction,
+            fresh_interaction,
+            "Team Name",
         )
         interaction, responses = await handler.send_response_modal()
-        self.db.create_team(
-            interaction.guild_id, responses[0]
-        )  # responses 0 is team name
+        if responses:
+            self.db.create_team(
+                interaction.guild_id, responses["Team Name"]
+            )  # responses 0 is team name
         await self.send_greeting_menu(interaction)
 
     async def send_main_menu(
