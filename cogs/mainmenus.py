@@ -14,6 +14,7 @@ from custom.ui import (
 from cogs.database import Database
 from enum import Enum
 
+# TODO: implement times every 30 mins from 6-12
 SCRIM_TIMES = {
     0: "Monday 8-10pm EST",
     1: "Monday 10-12am EST",
@@ -120,15 +121,19 @@ class Scheduler(commands.Cog):
         if view.choice == -1:  # back to welcome menu
             await interaction.delete_original_response()
             await self.send_greeting_menu(view.interaction)
+        # TODO: implement team schedule view
         elif view.choice == 0:  # view player's schedule
             await view.interaction.response.defer()
             await interaction.delete_original_response()
+        # TODO: implement set availability for players
         elif view.choice == 1:  # set player's availability
             await view.interaction.response.defer()
             await interaction.delete_original_response()
+        # TODO: implement manager menu
         elif view.choice == 2:  # view manager menu
             interaction = await self.send_manager_menu(view.interaction, team_id)
             await self.send_main_menu(interaction, team_id, privileges)
+        # TODO: implement admin menu
         else:  # view admin menu
             await view.interaction.response.defer()
             await interaction.delete_original_response()
@@ -138,8 +143,10 @@ class Scheduler(commands.Cog):
         await interaction.response.send_message("Manager Menu", view=view)
         await view.wait()
 
+        # TODO: add choices to set min players, set week's schedule, schedule release time
         while view.choice != -1:
             if view.choice == 0:
+                # TODO: This menu is wrong, should send final times team members available
                 interaction = await self.send_set_times_view(view.interaction, team_id)
             view = ManagerMenuView()
             await interaction.edit_original_response(view=view)
