@@ -74,10 +74,13 @@ class Scheduler(commands.Cog):
             # send new team name modal
             await self.send_team_creation_menu(interaction, view.interaction)
         else:  # selected a team
-            if self.db.is_manager(teams[view.choice][1], interaction.user.id):
+            if privileges == PRIVILEGES.ADMIN:
+                pass
+            elif self.db.is_manager(teams[view.choice][1], interaction.user.id):
                 privileges = PRIVILEGES.MANAGER
             else:
                 privileges = PRIVILEGES.PLAYER
+            await interaction.delete_original_response()
             await self.send_main_menu(
                 view.interaction, teams[view.choice][1], privileges
             )
@@ -114,9 +117,9 @@ class Scheduler(commands.Cog):
             )
         await interaction.response.send_message("Scrim Scheduler", view=view)
         await view.wait()
-        if view.choice == -1:
-            await view.interaction.response.defer()
+        if view.choice == -1:  # back to welcome menu
             await interaction.delete_original_response()
+            await self.send_greeting_menu(view.interaction)
         elif view.choice == 0:  # view player's schedule
             await view.interaction.response.defer()
             await interaction.delete_original_response()

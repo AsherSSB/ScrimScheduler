@@ -8,7 +8,7 @@ class Database(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot: commands.Bot = bot
         load_dotenv()
-        self.conn = sqlite3.connect("ScrimSchedulerDB")
+        self.conn = sqlite3.connect("ScrimSchedulerDB.db")
         self.cur = self.conn.cursor()
         self.cur.execute(
             """
@@ -45,6 +45,7 @@ class Database(commands.Cog):
             """,
             (server_id, team_name),
         )
+        self.conn.commit()
 
     def set_team_scrim_blocks(self, team_id, blocks):
         self.cur.execute(
@@ -85,6 +86,19 @@ class Database(commands.Cog):
             (team_id, user_id),
         )
         return self.cur.fetchone() is not None
+
+    @discord.app_commands.command(name="testdb")
+    async def print_all_teams(self, interaction: discord.Interaction):
+        content = ""
+        self.cur.execute(
+            """
+                SELECT * FROM scrimteams
+            """
+        )
+        res = self.cur.fetchall()
+        for i in res:
+            content += f"{i}\n"
+        await interaction.response.send_message(content)
 
 
 async def setup(bot):
