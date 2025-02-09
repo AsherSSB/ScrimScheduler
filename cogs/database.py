@@ -58,6 +58,19 @@ class Database(commands.Cog):
         )
         self.conn.commit()
 
+    # ASSUMES SCRIM BLOCKS AND TEAM EXIST
+    def get_team_scrim_blocks(self, team_id):
+        self.cur.execute(
+            """
+                SELECT scrim_blocks
+                FROM scrimteams
+                WHERE team_id = ?
+            """,
+            (team_id,),
+        )
+        row = self.cur.fetchone()
+        return row[0] if row else ""
+
     def get_teams_from_user_id(self, user_id):
         self.cur.execute(
             """

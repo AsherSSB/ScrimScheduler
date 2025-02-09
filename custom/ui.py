@@ -43,7 +43,7 @@ class ResponseButton(ui.Button):
 
 
 class ResponseSelectView(ResponseView):
-    def __init__(self):
+    def __init__(self, interaction, confirmed_disabled):
         super().__init__()
         self.choice = -99
         self.selections = []
@@ -51,12 +51,9 @@ class ResponseSelectView(ResponseView):
         self.confirm_button = ResponseButton(
             "Confirm Changes", 0, discord.ButtonStyle.green, row=4
         )
-        self.confirm_button.disabled = True
+        self.confirm_button.disabled = confirmed_disabled
         self.add_item(self.confirm_button)
-
-    def enable_confirm_if_selected(self):
-        if len(self.selections) > 0:
-            self.confirm_button.disabled = False
+        self.interaction: discord.Interaction = interaction
 
 
 class ResponseOption(discord.SelectOption):
@@ -65,14 +62,15 @@ class ResponseOption(discord.SelectOption):
 
 
 class ResponseSelect(ui.Select):
-    def __init__(self, options: list[discord.SelectOption], row=None):
-        super().__init__(options=options, max_values=len(options), row=row)
+    def __init__(self, options: list[discord.SelectOption], row=None, max_values=None):
+        if not max_values:
+            max_values = len(options)
+        super().__init__(options=options, max_values=max_values, row=row)
         self.view: ResponseSelectView
 
     async def callback(self, interaction):
         await interaction.response.defer()
         self.view.selections = [int(value) for value in self.values]
-        self.view.enable_confirm_if_selected()
         self.view.event.set()
 
 

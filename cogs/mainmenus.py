@@ -13,24 +13,44 @@ from custom.ui import (
 )
 from cogs.database import Database
 from enum import Enum
+from dataclasses import dataclass, asdict
+from jsonpickle import encode as pickle, decode as unpickle
 
-# TODO: implement times every 30 mins from 6-12
 SCRIM_TIMES = {
-    0: "Monday 8-10pm EST",
-    1: "Monday 10-12am EST",
-    2: "Tuesday 8-10pm EST",
-    3: "Tuesday 10-12am EST",
-    4: "Wednesday 8-10pm EST",
-    5: "Wednesday 10-12am EST",
-    6: "Thursday 8-10pm EST",
-    7: "Thursday 10-12am EST",
-    8: "Friday 8-10pm EST",
-    9: "Friday 10-12am EST",
-    10: "Saturday 8-10pm EST",
-    11: "Saturday 10-12am EST",
-    12: "Sunday 8-10pm EST",
-    13: "Sunday 10-12am EST",
+    0: "6:00 - 8:00 EST",
+    1: "6:30 - 8:30 EST",
+    2: "7:00 - 9:00 EST",
+    3: "7:30 - 9:30 EST",
+    4: "8:00 - 10:00 EST",
+    5: "8:30 - 10:30 EST",
+    6: "9:00 - 11:00 EST",
+    7: "9:30 - 11:30 EST",
+    8: "10:00 - 12:00 EST",
 }
+
+SCRIM_DAYS = {
+    0: "monday",
+    1: "tuesday",
+    2: "wednesday",
+    3: "thursday",
+    4: "friday",
+    5: "saturday",
+    6: "sunday",
+}
+
+
+@dataclass
+class Schedule:
+    monday: list
+    tuesday: list
+    wednesday: list
+    thursday: list
+    friday: list
+    saturday: list
+    sunday: list
+
+    def __len__(self):
+        return len(asdict(self))  # no. days in week
 
 
 class PRIVILEGES(Enum):
@@ -114,6 +134,11 @@ class Scheduler(commands.Cog):
             )
         elif privileges == PRIVILEGES.ADMIN:
             view.add_item(
+                ResponseButton(
+                    "Manager Options", 2, style=discord.ButtonStyle.gray, row=1
+                )
+            )
+            view.add_item(
                 ResponseButton("Admin Options", 3, style=discord.ButtonStyle.red, row=1)
             )
         await interaction.response.send_message("Scrim Scheduler", view=view)
@@ -131,6 +156,7 @@ class Scheduler(commands.Cog):
             await interaction.delete_original_response()
         # TODO: implement manager menu
         elif view.choice == 2:  # view manager menu
+            await interaction.delete_original_response()
             interaction = await self.send_manager_menu(view.interaction, team_id)
             await self.send_main_menu(interaction, team_id, privileges)
         # TODO: implement admin menu
@@ -146,24 +172,67 @@ class Scheduler(commands.Cog):
         # TODO: add choices to set min players, set week's schedule, schedule release time
         while view.choice != -1:
             if view.choice == 0:
-                # TODO: This menu is wrong, should send final times team members available
-                interaction = await self.send_set_times_view(view.interaction, team_id)
+                await interaction.delete_original_response()
+                interaction = await self.send_set_team_times_view(
+                    view.interaction, team_id
+                )
             view = ManagerMenuView()
             await interaction.edit_original_response(view=view)
             await view.wait()
 
         return view.interaction
 
-    async def send_set_times_view(self, interaction: discord.Interaction, team_id):
-        view = SetPotentialTimesView()
+    # takes fresh interaction
+    async def send_set_team_times_view(self, interaction: discord.Interaction, team_id):
+        string_schedule = self.db.get_team_scrim_blocks(team_id)
+        if string_schedule:
+            # pyright doesn't trust the power of the pickle
+            schedule: Schedule = unpickle(string_schedule)
+        else:
+            schedule = Schedule([], [], [], [], [], [], [])
+
+        interaction = await self.send_day_selection_view(interaction, schedule)
+        pickled_schedule = pickle(schedule)
+        self.db.set_team_scrim_blocks(team_id, pickled_schedule)
+        return interaction
+
+    # takes fresh interaction
+    async def send_day_selection_view(
+        self, interaction: discord.Interaction, schedule: Schedule
+    ):
+        view = SelectDayView(interaction, confirmed_disabled=True)
+        await interaction.response.send_message("Select Day", view=view)
+        await view.wait()
+        selections: list[int]
+        while view.choice != -1:
+            if view.choice == 0:
+                await view.interaction.response.defer()
+                print("ENTERING SELECT IF STATEMENT")
+                print(selections)
+                print(selections[0])
+                print(SCRIM_DAYS)
+                day_name = SCRIM_DAYS[selections[0]]
+                interaction, times = await self.send_time_selection_view(interaction)
+                setattr(schedule, day_name, times)
+            else:
+                selections = view.selections
+            view = SelectDayView(interaction, confirmed_disabled=False)
+            await interaction.edit_original_response(view=view)
+            await view.wait()
+
+        return view.interaction
+
+    # takes responded to interaction
+    async def send_time_selection_view(self, interaction: discord.Interaction):
+        view = SelectTimesView(interaction, confirmed_disabled=True)
         times = []
-        await interaction.response.send_message("Set Times", view=view)
+        await interaction.edit_original_response(content="Set Times", view=view)
         await view.wait()
         while view.choice != -1 and view.choice != 0:
             # set times to selections
             times = view.selections
             # reset view
-            view = SetPotentialTimesView()
+            view = SelectTimesView(interaction, confirmed_disabled=False)
             content = ""
             for time in times:
                 content += SCRIM_TIMES[time] + "\n"
@@ -171,11 +240,7 @@ class Scheduler(commands.Cog):
             await interaction.edit_original_response(content=content, view=view)
             # wait for response
             await view.wait()
-        if view.choice == 0:
-            # set time
-            self.db.set_team_scrim_blocks(team_id, "")
-            # return interaction
-        return view.interaction
+        return view.interaction, times
 
     async def cleanup(self):
         self.db.conn.close
@@ -236,9 +301,19 @@ class AdminMenuView(ResponseView):
         self.add_item(ResponseButton("Back", -1, style=discord.ButtonStyle.red, row=4))
 
 
-class SetPotentialTimesView(ResponseSelectView):
-    def __init__(self):
-        super().__init__()
+class SelectDayView(ResponseSelectView):
+    def __init__(self, interaction, confirmed_disabled):
+        super().__init__(interaction, confirmed_disabled)
+        schedule = Schedule([], [], [], [], [], [], [])
+        select_items = []
+        for key, value in SCRIM_DAYS.items():
+            select_items.append(ResponseOption(value, key))
+        self.add_item(ResponseSelect(select_items, 0, max_values=1))
+
+
+class SelectTimesView(ResponseSelectView):
+    def __init__(self, interaction, confirmed_disabled):
+        super().__init__(interaction, confirmed_disabled)
         select_items = []
         for keys, values in SCRIM_TIMES.items():
             select_items.append(ResponseOption(values, keys))
