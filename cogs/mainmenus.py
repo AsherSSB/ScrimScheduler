@@ -186,6 +186,7 @@ class Scheduler(commands.Cog):
 
         return view.interaction
 
+    # TODO: some of the interaction messages and select placeholders are inaccurate and confusing
     # takes fresh interaction
     async def send_set_team_times_view(self, interaction: discord.Interaction, team_id):
         string_schedule = self.db.get_team_scrim_blocks(team_id)
