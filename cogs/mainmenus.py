@@ -207,17 +207,17 @@ class Scheduler(commands.Cog):
         while view.choice != -1:
             if view.choice == 0:
                 await view.interaction.response.defer()
-                print("ENTERING SELECT IF STATEMENT")
-                print(selections)
-                print(selections[0])
-                print(SCRIM_DAYS)
                 day_name = SCRIM_DAYS[selections[0]]
                 interaction, times = await self.send_time_selection_view(interaction)
                 setattr(schedule, day_name, times)
+                view = SelectDayView(interaction, confirmed_disabled=False)
+                await interaction.response.send_message("Select Day", view=view)
             else:
                 selections = view.selections
-            view = SelectDayView(interaction, confirmed_disabled=False)
-            await interaction.edit_original_response(view=view)
+                view = SelectDayView(interaction, confirmed_disabled=False)
+                await interaction.edit_original_response(
+                    content=SCRIM_DAYS[selections[0]].capitalize(), view=view
+                )
             await view.wait()
 
         return view.interaction
@@ -307,7 +307,7 @@ class SelectDayView(ResponseSelectView):
         schedule = Schedule([], [], [], [], [], [], [])
         select_items = []
         for key, value in SCRIM_DAYS.items():
-            select_items.append(ResponseOption(value, key))
+            select_items.append(ResponseOption(value.capitalize(), key))
         self.add_item(ResponseSelect(select_items, 0, max_values=1))
 
 
