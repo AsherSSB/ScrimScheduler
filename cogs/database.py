@@ -14,7 +14,7 @@ class Database(commands.Cog):
             """
             CREATE TABLE IF NOT EXISTS scrimteams (
                 server_id BIGINT NOT NULL,
-                team_id SERIAL PRIMARY KEY,
+                team_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 team_name TEXT NOT NULL,
                 scrim_blocks TEXT
         );"""
@@ -52,7 +52,7 @@ class Database(commands.Cog):
             """
                 UPDATE scrimteams
                 SET scrim_blocks = ?
-                WHERE team_id = ?
+                WHERE team_id = ?;
                 """,
             (blocks, team_id),
         )
@@ -64,7 +64,7 @@ class Database(commands.Cog):
             """
                 SELECT scrim_blocks
                 FROM scrimteams
-                WHERE team_id = ?
+                WHERE team_id = ?;
             """,
             (team_id,),
         )
@@ -105,7 +105,7 @@ class Database(commands.Cog):
         content = ""
         self.cur.execute(
             """
-                SELECT * FROM scrimteams
+                SELECT * FROM scrimteams;
             """
         )
         res = self.cur.fetchall()

@@ -102,8 +102,11 @@ class Scheduler(commands.Cog):
             else:
                 privileges = PRIVILEGES.PLAYER
             await interaction.delete_original_response()
+            print(
+                f"IN SEND_GREETING_MENU\nTEAMS:{teams}\nTEAMSCHOICE:{teams[view.choice]}"
+            )
             await self.send_main_menu(
-                view.interaction, teams[view.choice][1], privileges
+                view.interaction, teams[view.choice][0], privileges
             )
 
     async def send_team_creation_menu(self, old_interaction, fresh_interaction):
@@ -164,6 +167,7 @@ class Scheduler(commands.Cog):
             await view.interaction.response.defer()
             await interaction.delete_original_response()
 
+    # all messages sent here must be fresh interactions
     async def send_manager_menu(self, interaction: discord.Interaction, team_id):
         view = ManagerMenuView()
         await interaction.response.send_message("Manager Menu", view=view)
@@ -177,7 +181,7 @@ class Scheduler(commands.Cog):
                     view.interaction, team_id
                 )
             view = ManagerMenuView()
-            await interaction.edit_original_response(view=view)
+            await interaction.response.send_message("Manager Menu", view=view)
             await view.wait()
 
         return view.interaction
@@ -192,7 +196,10 @@ class Scheduler(commands.Cog):
             schedule = Schedule([], [], [], [], [], [], [])
 
         interaction = await self.send_day_selection_view(interaction, schedule)
+        print(f"RETURNED\nSCHEDULE\n{schedule}")
         pickled_schedule = pickle(schedule)
+        print(f"PICKLED\n{pickled_schedule}")
+        print(f"ENTERING DB TEAM ID: {team_id}")
         self.db.set_team_scrim_blocks(team_id, pickled_schedule)
         return interaction
 
@@ -209,7 +216,10 @@ class Scheduler(commands.Cog):
                 await view.interaction.response.defer()
                 day_name = SCRIM_DAYS[selections[0]]
                 interaction, times = await self.send_time_selection_view(interaction)
+                print(f"DAY: {day_name}\nTIMES: {times}")  # debug
+                print("SETTING ATTR DAY TIME")  # debug
                 setattr(schedule, day_name, times)
+                print(f"RESULT\n{schedule}")  # debug
                 view = SelectDayView(interaction, confirmed_disabled=False)
                 await interaction.response.send_message("Select Day", view=view)
             else:
@@ -219,7 +229,9 @@ class Scheduler(commands.Cog):
                     content=SCRIM_DAYS[selections[0]].capitalize(), view=view
                 )
             await view.wait()
-
+        print("EXITING LOOP")
+        print(f"CURRENT SCHEDULE{schedule}")
+        print("RETURNING...")
         return view.interaction
 
     # takes responded to interaction
