@@ -25,7 +25,7 @@ class Database(commands.Cog):
             CREATE TABLE IF NOT EXISTS scrimplayers (
                 team_id INTEGER REFERENCES scrimteams(team_id),
                 user_id BIGINT NOT NULL,
-                availability ,
+                availability TEXT,
                 PRIMARY KEY (team_id, user_id)
         );"""
         )
@@ -111,6 +111,36 @@ class Database(commands.Cog):
         res = self.cur.fetchone()
         return res[0] if res is not None else ""
 
+    def set_player_availability(self, player_id, team_id, availability):
+        self.cur.execute(
+            """
+                UPDATE scrimplayers
+                SET availability = ?
+                WHERE player_id = ?
+                AND team_id = ?;
+            """,
+            (
+                player_id,
+                team_id,
+                availability,
+            ),
+        )
+        self.conn.commit()
+
+    def get_player_availability(self, player_id, team_id) -> str:
+        self.cur.execute(
+            """
+            SELECT availability FROM scrimplayers
+            WHERE player_id= ?
+            AND team_id = ?""",
+            (
+                player_id,
+                team_id,
+            ),
+        )
+        res = self.cur.fetchone()
+        return res[0] if res is not None else ""
+
     @discord.app_commands.command(name="testdb")
     async def print_all_teams(self, interaction: discord.Interaction):
         content = ""
@@ -120,8 +150,30 @@ class Database(commands.Cog):
             """
         )
         res = self.cur.fetchall()
+        content += "TEAMS\n"
         for i in res:
             content += f"{i}\n"
+
+        self.cur.execute(
+            """
+                SELECT * FROM scrimplayers;
+            """
+        )
+        res = self.cur.fetchall()
+        content += "PLAYERS\n"
+        for i in res:
+            content += f"{i}\n"
+
+        self.cur.execute(
+            """
+                SELECT * FROM scrimmanagers;
+            """
+        )
+        res = self.cur.fetchall()
+        content += "MANAGERS\n"
+        for i in res:
+            content += f"{i}\n"
+
         await interaction.response.send_message(content)
 
 

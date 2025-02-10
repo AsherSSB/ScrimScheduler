@@ -156,6 +156,9 @@ class Scheduler(commands.Cog):
         await interaction.delete_original_response()
         return view.interaction
 
+    async def send_set_player_availability_view(self, interaction, team_id):
+        user_id = interaction.user.id
+
     def generate_main_menu_with_privileges(self, privileges):
         view = (
             ScheduleView()
@@ -194,7 +197,7 @@ class Scheduler(commands.Cog):
         await view.wait()
 
         # TODO: add choices to set min players, set week's schedule,
-        #       set autopilot, schedule release time if on autopilot
+        #       set autopilot, schedule release time if on autopilot, set txt channel
         while view.choice != -1:
             if view.choice == 0:  # set viable blocks
                 await interaction.delete_original_response()
