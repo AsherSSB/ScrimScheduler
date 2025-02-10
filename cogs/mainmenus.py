@@ -104,9 +104,6 @@ class Scheduler(commands.Cog):
             else:
                 privileges = PRIVILEGES.PLAYER
             await interaction.delete_original_response()
-            print(
-                f"IN SEND_GREETING_MENU\nTEAMS:{teams}\nTEAMSCHOICE:{teams[view.choice]}"
-            )
             interaction = await self.send_main_menu(
                 view.interaction, teams[view.choice][0], privileges
             )
@@ -222,10 +219,7 @@ class Scheduler(commands.Cog):
             schedule = Schedule([], [], [], [], [], [], [])
 
         interaction = await self.send_day_selection_view(interaction, schedule)
-        print(f"RETURNED\nSCHEDULE\n{schedule}")
         pickled_schedule = pickle(schedule)
-        print(f"PICKLED\n{pickled_schedule}")
-        print(f"ENTERING DB TEAM ID: {team_id}")
         self.db.set_team_scrim_blocks(team_id, pickled_schedule)
         return interaction
 
@@ -242,10 +236,7 @@ class Scheduler(commands.Cog):
                 await view.interaction.response.defer()
                 day_name = SCRIM_DAYS[selections[0]]
                 interaction, times = await self.send_time_selection_view(interaction)
-                print(f"DAY: {day_name}\nTIMES: {times}")  # debug
-                print("SETTING ATTR DAY TIME")  # debug
                 setattr(schedule, day_name, times)
-                print(f"RESULT\n{schedule}")  # debug
                 view = SelectDayView(interaction, confirmed_disabled=False)
                 await interaction.response.send_message("Select Day", view=view)
             else:
@@ -255,9 +246,6 @@ class Scheduler(commands.Cog):
                     content=SCRIM_DAYS[selections[0]].capitalize(), view=view
                 )
             await view.wait()
-        print("EXITING LOOP")
-        print(f"CURRENT SCHEDULE{schedule}")
-        print("RETURNING...")
         return view.interaction
 
     # takes responded to interaction
