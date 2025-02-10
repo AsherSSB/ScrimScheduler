@@ -16,7 +16,8 @@ class Database(commands.Cog):
                 server_id BIGINT NOT NULL,
                 team_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 team_name TEXT NOT NULL,
-                scrim_blocks TEXT
+                scrim_blocks TEXT,
+                schedule TEXT
         );"""
         )
         self.cur.execute(
@@ -99,6 +100,16 @@ class Database(commands.Cog):
             (team_id, user_id),
         )
         return self.cur.fetchone() is not None
+
+    def get_team_schedule_from_id(self, team_id) -> str:
+        self.cur.execute(
+            """
+            SELECT schedule FROM scrimteams
+            WHERE team_id = ?""",
+            (team_id,),
+        )
+        res = self.cur.fetchone()
+        return res[0] if res is not None else ""
 
     @discord.app_commands.command(name="testdb")
     async def print_all_teams(self, interaction: discord.Interaction):

@@ -123,9 +123,41 @@ class Scheduler(commands.Cog):
             )  # responses 0 is team name
         await self.send_greeting_menu(interaction)
 
+    # I hate black formatting but I hate manually formatting everything more
     async def send_main_menu(
         self, interaction: discord.Interaction, team_id, privileges
     ):
+        view = self.generate_main_menu_with_privileges(privileges)
+        await interaction.response.send_message("Scrim Scheduler", view=view)
+        await view.wait()
+
+        while view.choice != -1:
+            # TODO: implement team schedule view
+            if view.choice == 0:  # view player's schedule
+                await view.interaction.response.defer()
+                interaction = await self.send_team_schedule_view(interaction, team_id)
+            # TODO: implement set availability for players
+            elif view.choice == 1:  # set player's availability
+                await view.interaction.response.defer()
+                await interaction.delete_original_response()
+            # TODO: implement manager menu
+            elif view.choice == 2:  # view manager menu
+                await interaction.delete_original_response()
+                interaction = await self.send_manager_menu(view.interaction, team_id)
+                await self.send_main_menu(interaction, team_id, privileges)
+            # TODO: implement admin menu
+            else:  # view admin menu
+                await view.interaction.response.defer()
+                await interaction.delete_original_response()
+
+            view = self.generate_main_menu_with_privileges(privileges)
+            await interaction.response.send_message("Scrim Scheduler", view=view)
+            await view.wait()
+
+        await interaction.delete_original_response()
+        return view.interaction
+
+    def generate_main_menu_with_privileges(self, privileges):
         view = (
             ScheduleView()
         )  # menu displaying admin and manager buttons inappropriately
@@ -144,28 +176,16 @@ class Scheduler(commands.Cog):
             view.add_item(
                 ResponseButton("Admin Options", 3, style=discord.ButtonStyle.red, row=1)
             )
-        await interaction.response.send_message("Scrim Scheduler", view=view)
+        return view
+
+    # takes used interaction
+    async def send_team_schedule_view(self, interaction: discord.Interaction, team_id):
+        view = ResponseView()
+        view.add_item(ResponseButton("Back", -1, discord.ButtonStyle.red))
+        schedule = self.db.get_team_schedule_from_id(team_id) or "No Schedule Set!"
+        await interaction.edit_original_response(content=schedule, view=view)
         await view.wait()
-        if view.choice == -1:  # back to welcome menu
-            await interaction.delete_original_response()
-            await self.send_greeting_menu(view.interaction)
-        # TODO: implement team schedule view
-        elif view.choice == 0:  # view player's schedule
-            await view.interaction.response.defer()
-            await interaction.delete_original_response()
-        # TODO: implement set availability for players
-        elif view.choice == 1:  # set player's availability
-            await view.interaction.response.defer()
-            await interaction.delete_original_response()
-        # TODO: implement manager menu
-        elif view.choice == 2:  # view manager menu
-            await interaction.delete_original_response()
-            interaction = await self.send_manager_menu(view.interaction, team_id)
-            await self.send_main_menu(interaction, team_id, privileges)
-        # TODO: implement admin menu
-        else:  # view admin menu
-            await view.interaction.response.defer()
-            await interaction.delete_original_response()
+        return view.interaction
 
     # all messages sent here must be fresh interactions
     async def send_manager_menu(self, interaction: discord.Interaction, team_id):
@@ -175,7 +195,7 @@ class Scheduler(commands.Cog):
 
         # TODO: add choices to set min players, set week's schedule, schedule release time
         while view.choice != -1:
-            if view.choice == 0:
+            if view.choice == 0:  # set viable blocks
                 await interaction.delete_original_response()
                 interaction = await self.send_set_team_times_view(
                     view.interaction, team_id
