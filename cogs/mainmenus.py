@@ -93,7 +93,9 @@ class Scheduler(commands.Cog):
             await interaction.delete_original_response()
         elif view.choice == 99:  # add team
             # send new team name modal
-            await self.send_team_creation_menu(interaction, view.interaction)
+            interaction = await self.send_team_creation_menu(
+                interaction, view.interaction
+            )
         else:  # selected a team
             if privileges == PRIVILEGES.ADMIN:
                 pass
@@ -105,9 +107,10 @@ class Scheduler(commands.Cog):
             print(
                 f"IN SEND_GREETING_MENU\nTEAMS:{teams}\nTEAMSCHOICE:{teams[view.choice]}"
             )
-            await self.send_main_menu(
+            interaction = await self.send_main_menu(
                 view.interaction, teams[view.choice][0], privileges
             )
+        await self.send_greeting_menu(interaction)
 
     async def send_team_creation_menu(self, old_interaction, fresh_interaction):
         handler = ResponseModalHandler(
@@ -121,7 +124,7 @@ class Scheduler(commands.Cog):
             self.db.create_team(
                 interaction.guild_id, responses["Team Name"]
             )  # responses 0 is team name
-        await self.send_greeting_menu(interaction)
+        return interaction
 
     # I hate black formatting but I hate manually formatting everything more
     async def send_main_menu(
@@ -132,7 +135,6 @@ class Scheduler(commands.Cog):
         await view.wait()
 
         while view.choice != -1:
-            # TODO: implement team schedule view
             if view.choice == 0:  # view player's schedule
                 await view.interaction.response.defer()
                 interaction = await self.send_team_schedule_view(interaction, team_id)
@@ -182,6 +184,7 @@ class Scheduler(commands.Cog):
     async def send_team_schedule_view(self, interaction: discord.Interaction, team_id):
         view = ResponseView()
         view.add_item(ResponseButton("Back", -1, discord.ButtonStyle.red))
+        # TODO: returned query needs processing to be human readable
         schedule = self.db.get_team_schedule_from_id(team_id) or "No Schedule Set!"
         await interaction.edit_original_response(content=schedule, view=view)
         await view.wait()
@@ -193,7 +196,8 @@ class Scheduler(commands.Cog):
         await interaction.response.send_message("Manager Menu", view=view)
         await view.wait()
 
-        # TODO: add choices to set min players, set week's schedule, schedule release time
+        # TODO: add choices to set min players, set week's schedule,
+        #       set autopilot, schedule release time if on autopilot
         while view.choice != -1:
             if view.choice == 0:  # set viable blocks
                 await interaction.delete_original_response()
@@ -204,6 +208,7 @@ class Scheduler(commands.Cog):
             await interaction.response.send_message("Manager Menu", view=view)
             await view.wait()
 
+        await interaction.delete_original_response()
         return view.interaction
 
     # TODO: some of the interaction messages and select placeholders are inaccurate and confusing
